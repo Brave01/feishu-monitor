@@ -1,4 +1,4 @@
-package service
+package fs
 
 import (
 	"context"
@@ -51,6 +51,6 @@ func GetTableMsg() (tableMs *response.TableMsFs, err error) {
 		return nil, err
 	} else {
 		// 业务处理
-		return &toStruct, nil
+		return toStruct, nil
 	}
 }

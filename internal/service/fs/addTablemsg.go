@@ -1,4 +1,4 @@
-package service
+package fs
 
 import (
 	"context"
@@ -11,23 +11,12 @@ import (
 	larkbitable "github.com/larksuite/oapi-sdk-go/v3/service/bitable/v1"
 )
 
-func AddTableMsg() error {
+func AddTableOneMsg(rf map[string]interface{}) error {
 	// 生成 Token
 	token, err2 := util.GetFsToken()
 	if err2 != nil {
 		return err2
 	}
-	// 测试
-	//var f request.Fields
-	//f.Date = 1752646469000
-	//f.CPUUsage = 0.1
-	//f.DiskUsage = 0.2
-	//f.MemoryUsage = 0.3
-	//f.ManDays = 3
-	//f.Priority = "不重要不紧急"
-	//f.ServerName = "wwwww"
-	//fsMap := util.StructToMap(f)
-	//fmt.Println(fsMap)
 	// 创建 Client
 	client := lark.NewClient(global.APPID, global.APP_SECRET)
 	// 创建请求对象
@@ -36,7 +25,7 @@ func AddTableMsg() error {
 		TableId(global.TABLE_ID).
 		UserIdType(`open_id`).
 		AppTableRecord(larkbitable.NewAppTableRecordBuilder().
-			Fields(map[string]interface{}{}).
+			Fields(rf).
 			Build()).
 		Build()
 
@@ -56,4 +45,46 @@ func AddTableMsg() error {
 	// 业务处理
 	fmt.Println(larkcore.Prettify(resp))
 	return nil
+}
+
+func AddTableMultiMsg(rfs []map[string]interface{}) error {
+	// 创建 Client
+	client := lark.NewClient(global.APPID, global.APP_SECRET)
+	// 创建请求对象
+	records := createAppTableRecord(rfs)
+	req := larkbitable.NewBatchCreateAppTableRecordReqBuilder().
+		AppToken(global.APP_TOKEN).
+		TableId(global.TABLE_ID).
+		UserIdType(`open_id`).
+		Body(larkbitable.NewBatchCreateAppTableRecordReqBodyBuilder().
+			Records(records).Build()).
+		Build()
+
+	// 发起请求
+	resp, err := client.Bitable.V1.AppTableRecord.BatchCreate(context.Background(), req)
+	// 处理错误
+	if err != nil {
+		return err
+	}
+
+	// 服务端错误处理
+	if !resp.Success() {
+		return errors.New(fmt.Sprintf("logId: %s, error response: \n%s", resp.RequestId(), larkcore.Prettify(resp.CodeError)))
+	}
+
+	// 业务处理
+	fmt.Println(larkcore.Prettify(resp))
+	return nil
+}
+
+func createAppTableRecord(rfs []map[string]interface{}) []*larkbitable.AppTableRecord {
+	appTableRecords := make([]*larkbitable.AppTableRecord, 0)
+	var appTableRecord *larkbitable.AppTableRecord
+	for _, rf := range rfs {
+		appTableRecord = larkbitable.NewAppTableRecordBuilder().
+			Fields(rf).
+			Build()
+		appTableRecords = append(appTableRecords, appTableRecord)
+	}
+	return appTableRecords
 }

@@ -1,34 +1,29 @@
-package service
+package fs
 
 import (
 	"context"
 	"errors"
 	"feishu-monitor/global"
-	"feishu-monitor/util"
 	"fmt"
 	lark "github.com/larksuite/oapi-sdk-go/v3"
 	larkcore "github.com/larksuite/oapi-sdk-go/v3/core"
 	larkbitable "github.com/larksuite/oapi-sdk-go/v3/service/bitable/v1"
 )
 
-func DelTableMsg(recordID string) error {
-	// 获取token
-	token, err2 := util.GetFsToken()
-	if err2 != nil {
-		return err2
-	}
+func DelTableMsg(recordID []string) error {
 	// 创建 Client
 	client := lark.NewClient(global.APPID, global.APP_SECRET)
 	// 创建请求对象
-	req := larkbitable.NewDeleteAppTableRecordReqBuilder().
-		AppToken(global.APPID).
+	req := larkbitable.NewBatchDeleteAppTableRecordReqBuilder().
+		AppToken(global.APP_TOKEN).
 		TableId(global.TABLE_ID).
-		RecordId(recordID).
+		Body(larkbitable.NewBatchDeleteAppTableRecordReqBodyBuilder().
+			Records(recordID).
+			Build()).
 		Build()
 
 	// 发起请求
-	resp, err := client.Bitable.V1.AppTableRecord.Delete(context.Background(), req, larkcore.WithTenantAccessToken(token.Tenant_Access_Token))
-
+	resp, err := client.Bitable.V1.AppTableRecord.BatchDelete(context.Background(), req)
 	// 处理错误
 	if err != nil {
 		return err
